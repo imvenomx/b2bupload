@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import path from 'path';
+import { writeFile, mkdir } from 'fs/promises';
 
 // Check if Supabase is configured
-let supabase: any;
+let supabase: ReturnType<typeof import('@supabase/supabase-js').createClient> | null = null;
 try {
   const { createClient } = require('@supabase/supabase-js');
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -54,14 +55,13 @@ export async function POST(request: NextRequest) {
           const bucketName = 'product-images';
           const filename = `${year}/${month}/${timestamp}-${randomStr}${ext}`;
           
-          console.log('Uploading to Supabase:', filename);
           
           // Convert File to ArrayBuffer
           const arrayBuffer = await file.arrayBuffer();
           const buffer = new Uint8Array(arrayBuffer);
 
           // Upload to Supabase Storage
-          const { data, error } = await supabase.storage
+          const { data, error } = await supabase!.storage
             .from(bucketName)
             .upload(filename, buffer, {
               contentType: file.type,
@@ -77,20 +77,27 @@ export async function POST(request: NextRequest) {
             }
             
             throw new Error(`Supabase upload failed: ${error.message}`);
-          }  
+          }
+
+          if (!data) {
+            throw new Error('Supabase upload failed: No data returned');
+          }
 
           console.log('File uploaded successfully:', data.path);
           
           // Get public URL
-          const { data: publicUrlData } = supabase.storage
+          const { data: publicUrlData } = supabase!.storage
             .from(bucketName)
             .getPublicUrl(data.path);
+
+          if (!publicUrlData) {
+            throw new Error('Failed to get public URL');
+          }
 
           fileUrl = publicUrlData.publicUrl;
           console.log('Public URL:', fileUrl);
         } else {
           // Fallback to local storage
-          const { writeFile, mkdir } = require('fs/promises');
           
           const filename = `${timestamp}-${randomStr}${ext}`;
           const uploadDir = path.join(process.cwd(), 'public', 'uploads', String(year), month);
