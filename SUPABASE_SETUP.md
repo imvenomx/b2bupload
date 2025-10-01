@@ -1,5 +1,17 @@
 # Supabase Setup Guide
 
+## Quick Fix for RLS Policy Violation
+
+If you're getting "RLS policy violation" errors, here's the quickest solution:
+
+1. Go to your [Supabase dashboard](https://supabase.com)
+2. Navigate to **Storage** → **product-images** bucket
+3. Click **Configuration**
+4. Toggle **Public bucket** to ON
+5. Try uploading again
+
+This will make the bucket publicly accessible and resolve the RLS issues.
+
 ## 1. Create Supabase Project
 
 1. Go to [supabase.com](https://supabase.com) and sign up

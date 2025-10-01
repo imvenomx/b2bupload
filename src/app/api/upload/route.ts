@@ -70,14 +70,19 @@ export async function POST(request: NextRequest) {
 
           if (error) {
             console.error('Supabase upload error:', error);
+            
+            // Check if it's an RLS policy error
+            if (error.message.includes('policy') || error.message.includes('permission')) {
+              throw new Error('RLS policy violation. Please make the bucket public or configure proper policies. See SUPABASE_SETUP.md for instructions.');
+            }
+            
             throw new Error(`Supabase upload failed: ${error.message}`);
-          }
+          }  
 
           console.log('File uploaded successfully:', data.path);
           
           // Get public URL
           const { data: publicUrlData } = supabase.storage
-            .from(bucketName)
             .getPublicUrl(data.path);
 
           fileUrl = publicUrlData.publicUrl;
