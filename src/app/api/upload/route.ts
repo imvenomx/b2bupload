@@ -22,8 +22,9 @@ export async function POST(request: NextRequest) {
     // Create uploads directory if it doesn't exist
     try {
       await mkdir(uploadDir, { recursive: true });
+      console.log('Directory created successfully:', uploadDir);
     } catch (error) {
-      // Directory might already exist
+      console.error('Error creating directory:', uploadDir, error);
     }
 
     const uploadedUrls: string[] = [];
@@ -48,6 +49,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ urls: uploadedUrls }, { status: 200 });
   } catch (error) {
     console.error('Upload error:', error);
-    return NextResponse.json({ error: 'Failed to upload files' }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to upload files', details: error instanceof Error ? error.message : 'Unknown error' }, { status: 500 });
   }
 }

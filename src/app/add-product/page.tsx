@@ -63,7 +63,8 @@ export default function AddProduct() {
       });
 
       if (!response.ok) {
-        throw new Error('Upload failed');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Upload failed');
       }
 
       const data = await response.json();
@@ -79,7 +80,7 @@ export default function AddProduct() {
       }
     } catch (error) {
       console.error('Upload error:', error);
-      alert('Échec du téléchargement des images. Veuillez réessayer.');
+      alert(`Échec du téléchargement des images: ${error instanceof Error ? error.message : 'Erreur inconnue'}. Veuillez réessayer.`);
     } finally {
       setIsUploading(false);
     }
