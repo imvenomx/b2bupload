@@ -2,15 +2,53 @@
 
 ## Quick Fix for RLS Policy Violation
 
-If you're getting "RLS policy violation" errors, here's the quickest solution:
+If you're getting "RLS policy violation" errors, even with the bucket set to public, you need to create proper policies:
+
+### Method 1: Disable RLS Completely (Easiest)
 
 1. Go to your [Supabase dashboard](https://supabase.com)
 2. Navigate to **Storage** → **product-images** bucket
 3. Click **Configuration**
-4. Toggle **Public bucket** to ON
+4. Toggle **Enable RLS** to OFF
 5. Try uploading again
 
-This will make the bucket publicly accessible and resolve the RLS issues.
+### Method 2: Create Proper Policies (More Secure)
+
+If you want to keep RLS enabled:
+
+1. Go to **Authentication** → **Policies** in your Supabase dashboard
+2. Click **Create a new policy** on the `storage.objects` table
+3. Create a policy for **SELECT** (read access):
+   ```sql
+   CREATE POLICY "Public read access" ON storage.objects
+   FOR SELECT USING (bucket_id = 'product-images');
+   ```
+4. Create another policy for **INSERT** (upload access):
+   ```sql
+   CREATE POLICY "Public upload access" ON storage.objects
+   FOR INSERT WITH CHECK (bucket_id = 'product-images');
+   ```
+5. Try uploading again
+
+### Method 3: Use Supabase SQL Editor
+
+1. Go to **SQL Editor** in your Supabase dashboard
+2. Click **New query**
+3. Run this SQL:
+   ```sql
+   -- Drop existing policies if any
+   DROP POLICY IF EXISTS "Public read access" ON storage.objects;
+   DROP POLICY IF EXISTS "Public upload access" ON storage.objects;
+   
+   -- Create new policies
+   CREATE POLICY "Public read access" ON storage.objects
+   FOR SELECT USING (bucket_id = 'product-images');
+   
+   CREATE POLICY "Public upload access" ON storage.objects
+   FOR INSERT WITH CHECK (bucket_id = 'product-images');
+   ```
+
+**Note**: Method 1 (disabling RLS) is the quickest solution for development. Method 2 or 3 are better for production.
 
 ## 1. Create Supabase Project
 
