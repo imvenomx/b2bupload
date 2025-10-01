@@ -1,103 +1,193 @@
-import Image from "next/image";
+'use client';
+
+import { useProducts } from '@/contexts/ProductContext';
+import { convertProductsToWooCommerceCSV, downloadCSV } from '@/utils/csvExport';
+import { Plus, Download, Package, Edit, Trash2 } from 'lucide-react';
+import Link from 'next/link';
 
 export default function Home() {
-  return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const { products, deleteProduct } = useProducts();
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  const handleExportCSV = () => {
+    if (products.length === 0) {
+      alert('Aucun produit à exporter');
+      return;
+    }
+    const csv = convertProductsToWooCommerceCSV(products);
+    downloadCSV(csv, `woocommerce-products-${new Date().toISOString().split('T')[0]}.csv`);
+  };
+
+  const handleDelete = (id: string, name: string) => {
+    if (confirm(`Êtes-vous sûr de vouloir supprimer "${name}" ?`)) {
+      deleteProduct(id);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
+      <div className="container mx-auto px-4 py-8">
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex items-center gap-3 mb-2">
+            <Package className="w-8 h-8 text-blue-600" />
+            <h1 className="text-4xl font-bold text-slate-800 dark:text-white">
+              Gestionnaire de Produits WooCommerce
+            </h1>
+          </div>
+          <p className="text-slate-600 dark:text-slate-400">
+            Gérez vos produits et exportez-les au format WooCommerce
+          </p>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+
+        {/* Action Buttons */}
+        <div className="flex gap-4 mb-6">
+          <Link
+            href="/add-product"
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors shadow-md hover:shadow-lg"
+          >
+            <Plus className="w-5 h-5" />
+            Ajouter un Produit
+          </Link>
+          <button
+            onClick={handleExportCSV}
+            className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium transition-colors shadow-md hover:shadow-lg cursor-pointer"
+          >
+            <Download className="w-5 h-5" />
+            Exporter CSV
+          </button>
+        </div>
+
+        {/* Products Table */}
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg overflow-hidden">
+          {products.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 px-4">
+              <Package className="w-16 h-16 text-slate-300 dark:text-slate-600 mb-4" />
+              <h3 className="text-xl font-semibold text-slate-700 dark:text-slate-300 mb-2">
+                Aucun produit pour le moment
+              </h3>
+              <p className="text-slate-500 dark:text-slate-400 mb-6">
+                Commencez par ajouter votre premier produit
+              </p>
+              <Link
+                href="/add-product"
+                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+              >
+                <Plus className="w-5 h-5" />
+                Ajouter un Produit
+              </Link>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="bg-slate-100 dark:bg-slate-700 border-b border-slate-200 dark:border-slate-600">
+                    <th className="text-left px-6 py-4 text-sm font-semibold text-slate-700 dark:text-slate-200">
+                      Nom du Produit
+                    </th>
+                    <th className="text-left px-6 py-4 text-sm font-semibold text-slate-700 dark:text-slate-200">
+                      SKU
+                    </th>
+                    <th className="text-left px-6 py-4 text-sm font-semibold text-slate-700 dark:text-slate-200">
+                      Type
+                    </th>
+                    <th className="text-left px-6 py-4 text-sm font-semibold text-slate-700 dark:text-slate-200">
+                      Prix
+                    </th>
+                    <th className="text-left px-6 py-4 text-sm font-semibold text-slate-700 dark:text-slate-200">
+                      Variantes
+                    </th>
+                    <th className="text-left px-6 py-4 text-sm font-semibold text-slate-700 dark:text-slate-200">
+                      Créé le
+                    </th>
+                    <th className="text-left px-6 py-4 text-sm font-semibold text-slate-700 dark:text-slate-200">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {products.map((product, index) => (
+                    <tr
+                      key={product.id}
+                      className={`border-b border-slate-200 dark:border-slate-700 ${
+                        index % 2 === 0 ? 'bg-white dark:bg-slate-800' : 'bg-slate-50 dark:bg-slate-750'
+                      }`}
+                    >
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          {product.mainImage && (
+                            <img
+                              src={product.mainImage}
+                              alt={product.name}
+                              className="w-12 h-12 object-cover rounded-lg"
+                            />
+                          )}
+                          <div>
+                            <div className="font-medium text-slate-900 dark:text-white">
+                              {product.name}
+                            </div>
+                            <div className="text-sm text-slate-500 dark:text-slate-400 line-clamp-1">
+                              {product.shortDescription}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-slate-700 dark:text-slate-300">
+                        <code className="bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded text-sm">
+                          {product.sku}
+                        </code>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span
+                          className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+                            product.type === 'simple'
+                              ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                              : 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200'
+                          }`}
+                        >
+                          {product.type}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-slate-700 dark:text-slate-300 font-medium">
+                        {product.price.toFixed(2)} MAD
+                      </td>
+                      <td className="px-6 py-4 text-slate-700 dark:text-slate-300">
+                        {product.type === 'variable' ? (
+                          <span className="text-sm">
+                            {product.variants?.length || 0} variante(s)
+                          </span>
+                        ) : (
+                          <span className="text-sm text-slate-400">—</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">
+                        {new Date(product.createdAt).toLocaleDateString('fr-FR')}
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-2">
+                          <Link
+                            href={`/edit-product/${product.id}`}
+                            className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                            title="Modifier"
+                          >
+                            <Edit className="w-5 h-5" />
+                          </Link>
+                          <button
+                            onClick={() => handleDelete(product.id, product.name)}
+                            className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                            title="Supprimer"
+                          >
+                            <Trash2 className="w-5 h-5" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
