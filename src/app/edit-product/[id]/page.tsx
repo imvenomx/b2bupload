@@ -441,7 +441,7 @@ export default function EditProduct() {
                     className="w-full flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition-colors text-sm"
                   >
                     <Plus className="w-4 h-4" />
-                    Ajouter l'Attribut
+                    Ajouter l&apos;Attribut
                   </button>
                 </div>
               </div>
@@ -562,6 +562,7 @@ export default function EditProduct() {
             </label>
             {formData.mainImage ? (
               <div className="relative w-48 h-48 mb-3">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={formData.mainImage}
                   alt="Principal"
@@ -600,6 +601,7 @@ export default function EditProduct() {
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mb-3">
               {formData.galleryImages.map((image, index) => (
                 <div key={index} className="relative aspect-square">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={image}
                     alt={`Galerie ${index + 1}`}

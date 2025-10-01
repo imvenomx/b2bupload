@@ -22,7 +22,7 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
       try {
         const parsed = JSON.parse(stored);
         // Convert date strings back to Date objects
-        const productsWithDates = parsed.map((p: any) => ({
+        const productsWithDates = parsed.map((p: Product) => ({
           ...p,
           createdAt: new Date(p.createdAt),
         }));
