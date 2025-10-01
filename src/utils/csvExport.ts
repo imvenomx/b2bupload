@@ -93,7 +93,9 @@ export function convertProductsToWooCommerceCSV(products: Product[]): string {
           Parent: product.id,
           Position: index,
           'Attribute 1 name': 'Variation',
-          'Attribute 1 value(s)': variant.attributes,
+          'Attribute 1 value(s)': Object.entries(variant.attributes)
+            .map(([key, value]) => `${key}: ${value}`)
+            .join(', '),
           'Attribute 1 visible': 1,
           'Attribute 1 global': 0,
         });
