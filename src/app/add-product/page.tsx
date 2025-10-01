@@ -64,7 +64,20 @@ export default function AddProduct() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Upload failed');
+        console.log('Error response from server:', errorData);
+        let errorMessage = errorData.error || 'Upload failed';
+        
+        if (errorData.details) {
+          errorMessage += `: ${errorData.details}`;
+        }
+        if (errorData.path) {
+          errorMessage += ` (Path: ${errorData.path})`;
+        }
+        if (errorData.fileName) {
+          errorMessage += ` (File: ${errorData.fileName})`;
+        }
+        
+        throw new Error(errorMessage);
       }
 
       const data = await response.json();
@@ -80,7 +93,8 @@ export default function AddProduct() {
       }
     } catch (error) {
       console.error('Upload error:', error);
-      alert(`Échec du téléchargement des images: ${error instanceof Error ? error.message : 'Erreur inconnue'}. Veuillez réessayer.`);
+      const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';
+      alert(`Échec du téléchargement des images:\n\n${errorMessage}\n\nVeuillez réessayer ou vérifiez la console pour plus de détails.`);
     } finally {
       setIsUploading(false);
     }
