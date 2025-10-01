@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import path from 'path';
 import { writeFile, mkdir } from 'fs/promises';
+import { createClient } from '@supabase/supabase-js';
 
 // Check if Supabase is configured
-let supabase: ReturnType<typeof import('@supabase/supabase-js').createClient> | null = null;
+let supabase: ReturnType<typeof createClient> | null = null;
 try {
-  const { createClient } = require('@supabase/supabase-js');
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   
