@@ -83,6 +83,7 @@ export async function POST(request: NextRequest) {
           
           // Get public URL
           const { data: publicUrlData } = supabase.storage
+            .from(bucketName)
             .getPublicUrl(data.path);
 
           fileUrl = publicUrlData.publicUrl;
