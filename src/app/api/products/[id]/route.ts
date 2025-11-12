@@ -6,26 +6,79 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL as string;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string;
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
+// DB row types
+type DbProductRow = {
+  id: string;
+  name: string;
+  short_description: string | null;
+  long_description: string | null;
+  type: 'simple' | 'variable';
+  price: number;
+  sku: string;
+  main_image: string | null;
+  created_at: string;
+};
+
+type DbImageRow = {
+  id?: string;
+  product_id: string;
+  url: string;
+  position: number;
+};
+
+type DbAttributeRow = {
+  id: string;
+  product_id: string;
+  name: string;
+  values: string[] | null;
+  visible: boolean;
+  variation: boolean;
+};
+
+type DbVariantRow = {
+  id: string;
+  product_id: string;
+  sku: string;
+  price: number;
+  stock: number | null;
+  image: string | null;
+};
+
+type DbVariantAttributeRow = {
+  variant_id: string;
+  name: string;
+  value: string;
+};
+
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
   try {
     const id = params.id;
-    const { data: product, error: prodErr } = await supabase.from('products').select('*').eq('id', id).single();
+    const { data: product, error: prodErr } = await supabase
+      .from<DbProductRow>('products')
+      .select('*')
+      .eq('id', id)
+      .single();
     if (prodErr) throw prodErr;
 
     const [{ data: images }, { data: attrs }, { data: variants }] = await Promise.all([
-      supabase.from('product_images').select('*').eq('product_id', id),
-      supabase.from('product_attributes').select('*').eq('product_id', id),
-      supabase.from('product_variants').select('*').eq('product_id', id),
+      supabase.from<DbImageRow>('product_images').select('*').eq('product_id', id),
+      supabase.from<DbAttributeRow>('product_attributes').select('*').eq('product_id', id),
+      supabase.from<DbVariantRow>('product_variants').select('*').eq('product_id', id),
     ]);
 
-    const variantIds = (variants || []).map((v: any) => v.id);
+    const imageRows: DbImageRow[] = images ?? [];
+    const attrRows: DbAttributeRow[] = attrs ?? [];
+    const variantRows: DbVariantRow[] = variants ?? [];
+
+    const variantIds: string[] = (variantRows as DbVariantRow[]).map((v: DbVariantRow) => v.id);
     const { data: variantAttributes } = await supabase
-      .from('product_variant_attributes')
+      .from<DbVariantAttributeRow>('product_variant_attributes')
       .select('*')
       .in('variant_id', variantIds.length ? variantIds : ['00000000-0000-0000-0000-000000000000']);
 
-    const variantAttrMap: Record<string, any[]> = {};
-    (variantAttributes || []).forEach((va: any) => {
+    const variantAttrMap: Record<string, DbVariantAttributeRow[]> = {};
+    const variantAttrRows: DbVariantAttributeRow[] = variantAttributes ?? [];
+    variantAttrRows.forEach((va: DbVariantAttributeRow) => {
       variantAttrMap[va.variant_id] = variantAttrMap[va.variant_id] || [];
       variantAttrMap[va.variant_id].push(va);
     });
@@ -39,11 +92,14 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
       price: Number(product.price),
       sku: product.sku,
       mainImage: product.main_image ?? undefined,
-      galleryImages: (images || []).sort((a: any, b: any) => a.position - b.position).map((i: any) => i.url),
-      attributes: (attrs || []).map((a: any) => ({ id: a.id, name: a.name, values: a.values || [], visible: !!a.visible, variation: !!a.variation })),
-      variants: (variants || []).map((v: any) => ({
+      galleryImages: imageRows
+        .slice()
+        .sort((a: DbImageRow, b: DbImageRow) => a.position - b.position)
+        .map((i: DbImageRow) => i.url),
+      attributes: attrRows.map((a: DbAttributeRow) => ({ id: a.id, name: a.name, values: a.values || [], visible: !!a.visible, variation: !!a.variation })),
+      variants: variantRows.map((v: DbVariantRow) => ({
         id: v.id,
-        attributes: Object.fromEntries((variantAttrMap[v.id] || []).map((va: any) => [va.name, va.value])),
+        attributes: Object.fromEntries((variantAttrMap[v.id] || []).map((va: DbVariantAttributeRow) => [va.name, va.value] as const)),
         sku: v.sku,
         price: Number(v.price),
         stock: v.stock ?? undefined,
@@ -53,8 +109,9 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
     };
 
     return NextResponse.json(res, { status: 200 });
-  } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 500 });
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : 'Unknown error';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 
@@ -82,9 +139,12 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     await supabase.from('product_images').delete().eq('product_id', id);
     await supabase.from('product_attributes').delete().eq('product_id', id);
 
-    const { data: existingVariants, error: exVarErr } = await supabase.from('product_variants').select('id').eq('product_id', id);
+    const { data: existingVariants, error: exVarErr } = await supabase
+      .from<{ id: string }>('product_variants')
+      .select('id')
+      .eq('product_id', id);
     if (exVarErr) throw exVarErr;
-    const existingVariantIds = (existingVariants || []).map((v: any) => v.id);
+    const existingVariantIds = (existingVariants || []).map((v) => v.id);
     if (existingVariantIds.length) {
       await supabase.from('product_variant_attributes').delete().in('variant_id', existingVariantIds);
       await supabase.from('product_variants').delete().eq('product_id', id);
@@ -103,15 +163,19 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     }
 
     if (body.variants?.length) {
-      const variantRows = body.variants.map(v => ({ product_id: id, sku: v.sku, price: v.price, stock: v.stock ?? null, image: v.image ?? null }));
-      const { data: insertedVariants, error: varErr } = await supabase.from('product_variants').insert(variantRows).select('*');
+      const variantRows = body.variants.map((v) => ({ product_id: id, sku: v.sku, price: v.price, stock: v.stock ?? null, image: v.image ?? null }));
+      const { data: insertedVariants, error: varErr } = await supabase
+        .from<DbVariantRow>('product_variants')
+        .insert(variantRows)
+        .select('*');
       if (varErr) throw varErr;
 
-      const attrPairs: any[] = [];
-      insertedVariants.forEach((ins: any, i: number) => {
+      const attrPairs: DbVariantAttributeRow[] = [];
+      const inserted: DbVariantRow[] = insertedVariants ?? [];
+      inserted.forEach((ins: DbVariantRow, i: number) => {
         const original = body.variants![i];
         Object.entries(original.attributes || {}).forEach(([name, value]) => {
-          attrPairs.push({ variant_id: ins.id, name, value });
+          attrPairs.push({ variant_id: ins.id, name, value: String(value) });
         });
       });
       if (attrPairs.length) {
@@ -121,8 +185,9 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     }
 
     return NextResponse.json({ ok: true }, { status: 200 });
-  } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 500 });
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : 'Unknown error';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 
@@ -132,7 +197,8 @@ export async function DELETE(_req: NextRequest, { params }: { params: { id: stri
     const { error } = await supabase.from('products').delete().eq('id', id);
     if (error) throw error;
     return NextResponse.json({ ok: true }, { status: 200 });
-  } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 500 });
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : 'Unknown error';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
