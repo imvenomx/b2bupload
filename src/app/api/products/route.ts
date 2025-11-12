@@ -90,16 +90,16 @@ function mapDbToProduct(
 export async function GET() {
   try {
     const { data: products, error } = await supabase
-      .from<DbProductRow>('products')
+      .from('products')
       .select('*')
       .order('created_at', { ascending: false });
     if (error) throw error;
 
     const ids: string[] = (products || []).map((p: DbProductRow) => p.id);
     const [{ data: images }, { data: attrs }, { data: variants }] = await Promise.all([
-      supabase.from<DbImageRow>('product_images').select('*').in('product_id', ids.length ? ids : ['00000000-0000-0000-0000-000000000000']),
-      supabase.from<DbAttributeRow>('product_attributes').select('*').in('product_id', ids.length ? ids : ['00000000-0000-0000-0000-000000000000']),
-      supabase.from<DbVariantRow>('product_variants').select('*').in('product_id', ids.length ? ids : ['00000000-0000-0000-0000-000000000000']),
+      supabase.from('product_images').select('*').in('product_id', ids.length ? ids : ['00000000-0000-0000-0000-000000000000']),
+      supabase.from('product_attributes').select('*').in('product_id', ids.length ? ids : ['00000000-0000-0000-0000-000000000000']),
+      supabase.from('product_variants').select('*').in('product_id', ids.length ? ids : ['00000000-0000-0000-0000-000000000000']),
     ]);
 
     const imageRows: DbImageRow[] = images ?? [];
@@ -108,7 +108,7 @@ export async function GET() {
 
     const variantIds: string[] = (variantRows || []).map((v: DbVariantRow) => v.id);
     const { data: variantAttributes } = await supabase
-      .from<DbVariantAttributeRow>('product_variant_attributes')
+      .from('product_variant_attributes')
       .select('*')
       .in('variant_id', variantIds.length ? variantIds : ['00000000-0000-0000-0000-000000000000']);
 
@@ -134,7 +134,7 @@ export async function POST(req: NextRequest) {
     const body = (await req.json()) as Product;
 
     const { data: createdProduct, error: prodError } = await supabase
-      .from<DbProductRow>('products')
+      .from('products')
       .insert({
         name: body.name,
         short_description: body.shortDescription,
@@ -165,7 +165,7 @@ export async function POST(req: NextRequest) {
     if (body.variants?.length) {
       const variantRows = body.variants.map((v) => ({ product_id: productId, sku: v.sku, price: v.price, stock: v.stock ?? null, image: v.image ?? null }));
       const { data: insertedVariants, error: varErr } = await supabase
-        .from<DbVariantRow>('product_variants')
+        .from('product_variants')
         .insert(variantRows)
         .select('*');
       if (varErr) throw varErr;
