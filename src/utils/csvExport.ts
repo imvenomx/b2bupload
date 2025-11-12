@@ -48,17 +48,14 @@ export interface WooCommerceCSVRow {
 }
 
 export function convertProductsToWooCommerceCSV(products: Product[]): string {
-  const csvData: Partial<WooCommerceCSVRow>[] = [];
+  const rows: Array<Record<string, string | number>> = [];
 
   products.forEach((product) => {
-    // For variable products, add parent product
-    if (product.type === 'variable') {
-      // Combine main image and gallery images
-      const imageUrls = [product.mainImage, ...product.galleryImages]
-        .filter(Boolean)
-        .join(', ');
+    const baseImages = [product.mainImage, ...product.galleryImages].filter(Boolean).join(', ');
 
-      csvData.push({
+    if (product.type === 'variable') {
+      // Parent (variable) product row
+      const parentRow: Record<string, string | number> = {
         ID: product.id,
         Type: 'variable',
         SKU: product.sku,
@@ -72,19 +69,28 @@ export function convertProductsToWooCommerceCSV(products: Product[]): string {
         'In stock?': 1,
         'Allow customer reviews?': 1,
         'Regular price': '',
-        Images: imageUrls,
+        Images: baseImages,
         Position: 0,
+      };
+
+      const attrs = product.attributes ?? [];
+      attrs.forEach((attr, idx) => {
+        const i = idx + 1;
+        parentRow[`Attribute ${i} name`] = attr.name;
+        parentRow[`Attribute ${i} value(s)`] = (attr.values || []).join(' | ');
+        parentRow[`Attribute ${i} visible`] = attr.visible ? 1 : 1; // default visible
+        parentRow[`Attribute ${i} global`] = 0;
       });
 
-      // Add variants as separate rows
+      rows.push(parentRow);
+
+      // Variation rows
       product.variants?.forEach((variant, index) => {
-        csvData.push({
+        const variationRow: Record<string, string | number> = {
           ID: variant.id,
           Type: 'variation',
           SKU: variant.sku,
-          Name: `${product.name} - ${Object.entries(variant.attributes)
-            .map(([key, value]) => `${key}: ${value}`)
-            .join(', ')}`,
+          Name: '',
           Published: 1,
           'Visibility in catalog': 'visible',
           'Short description': '',
@@ -92,23 +98,27 @@ export function convertProductsToWooCommerceCSV(products: Product[]): string {
           'Tax status': 'taxable',
           'In stock?': 1,
           'Regular price': variant.price.toString(),
-          Parent: product.id,
+          Parent: product.sku || product.id,
           Position: index,
-          'Attribute 1 name': 'Variation',
-          'Attribute 1 value(s)': Object.entries(variant.attributes)
-            .map(([key, value]) => `${key}: ${value}`)
-            .join(', '),
-          'Attribute 1 visible': 1,
-          'Attribute 1 global': 0,
+        };
+
+        attrs.forEach((attr, idx) => {
+          const i = idx + 1;
+          variationRow[`Attribute ${i} name`] = attr.name;
+          variationRow[`Attribute ${i} value(s)`] = variant.attributes[attr.name] || '';
+          variationRow[`Attribute ${i} visible`] = attr.visible ? 1 : 1;
+          variationRow[`Attribute ${i} global`] = 0;
         });
+
+        if (variant.image) {
+          variationRow['Images'] = variant.image;
+        }
+
+        rows.push(variationRow);
       });
     } else {
-      // Simple product - combine main image and gallery images
-      const imageUrls = [product.mainImage, ...product.galleryImages]
-        .filter(Boolean)
-        .join(', ');
-
-      csvData.push({
+      // Simple product
+      const simpleRow: Record<string, string | number> = {
         ID: product.id,
         Type: 'simple',
         SKU: product.sku,
@@ -122,14 +132,15 @@ export function convertProductsToWooCommerceCSV(products: Product[]): string {
         'In stock?': 1,
         'Allow customer reviews?': 1,
         'Regular price': product.price.toString(),
-        Images: imageUrls,
+        Images: baseImages,
         Position: 0,
-      });
+      };
+
+      rows.push(simpleRow);
     }
   });
 
-  const csv = Papa.unparse(csvData);
-  return csv;
+  return Papa.unparse(rows);
 }
 
 export function downloadCSV(csvContent: string, filename: string = 'products.csv') {

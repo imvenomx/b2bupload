@@ -178,7 +178,7 @@ export default function EditProduct() {
     setVariants(variants.filter((_, i) => i !== index));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
     // Validation
@@ -208,7 +208,7 @@ export default function EditProduct() {
       shortDescription: formData.shortDescription,
       longDescription: formData.longDescription,
       type: formData.type,
-      price: formData.type === 'simple' ? parseFloat(formData.price) : 0,
+      price: formData.type === 'simple' ? parseFloat(formData.price) : (formData.price ? parseFloat(formData.price) : 0),
       sku: formData.sku,
       mainImage: formData.mainImage,
       galleryImages: formData.galleryImages,
@@ -217,7 +217,7 @@ export default function EditProduct() {
       createdAt: products.find((p) => p.id === productId)?.createdAt || new Date(),
     };
 
-    await updateProduct(productId, product);
+    updateProduct(productId, product);
     router.push('/');
   };
 

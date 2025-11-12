@@ -196,7 +196,7 @@ export default function AddProduct() {
       shortDescription: formData.shortDescription,
       longDescription: formData.longDescription,
       type: formData.type,
-      price: formData.type === 'simple' ? parseFloat(formData.price) : 0,
+      price: formData.type === 'simple' ? parseFloat(formData.price) : (formData.price ? parseFloat(formData.price) : 0),
       sku: formData.sku,
       mainImage: formData.mainImage,
       galleryImages: formData.galleryImages,
