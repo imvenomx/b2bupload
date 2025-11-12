@@ -178,7 +178,7 @@ export default function EditProduct() {
     setVariants(variants.filter((_, i) => i !== index));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     // Validation
@@ -217,7 +217,7 @@ export default function EditProduct() {
       createdAt: products.find((p) => p.id === productId)?.createdAt || new Date(),
     };
 
-    updateProduct(productId, product);
+    await updateProduct(productId, product);
     router.push('/');
   };
 

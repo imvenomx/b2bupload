@@ -82,7 +82,9 @@ export function convertProductsToWooCommerceCSV(products: Product[]): string {
           ID: variant.id,
           Type: 'variation',
           SKU: variant.sku,
-          Name: `${product.name} - ${variant.attributes}`,
+          Name: `${product.name} - ${Object.entries(variant.attributes)
+            .map(([key, value]) => `${key}: ${value}`)
+            .join(', ')}`,
           Published: 1,
           'Visibility in catalog': 'visible',
           'Short description': '',

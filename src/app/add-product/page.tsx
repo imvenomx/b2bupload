@@ -166,7 +166,7 @@ export default function AddProduct() {
     setVariants(variants.filter((_, i) => i !== index));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     // Validation
@@ -205,7 +205,7 @@ export default function AddProduct() {
       createdAt: new Date(),
     };
 
-    addProduct(product);
+    await addProduct(product);
     router.push('/');
   };
 
