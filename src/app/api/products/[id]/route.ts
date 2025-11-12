@@ -50,9 +50,9 @@ type DbVariantAttributeRow = {
   value: string;
 };
 
-export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const id = params.id;
+    const { id } = await params;
     const { data: product, error: prodErr } = await supabase
       .from<DbProductRow>('products')
       .select('*')
@@ -115,9 +115,9 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
   }
 }
 
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const id = params.id;
+    const { id } = await params;
     const body = (await req.json()) as Product;
 
     // Update product
@@ -191,9 +191,9 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   }
 }
 
-export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const id = params.id;
+    const { id } = await params;
     const { error } = await supabase.from('products').delete().eq('id', id);
     if (error) throw error;
     return NextResponse.json({ ok: true }, { status: 200 });
